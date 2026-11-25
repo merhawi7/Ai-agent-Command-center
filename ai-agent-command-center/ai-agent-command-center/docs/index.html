@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Agent Command Center</title>
+<style>
+:root{--bg:#080f1e;--card:#111c30;--line:#263650;--tx:#e2e8f0;--mut:#94a3b8;--blue:#3b82f6;--green:#22c55e;--amber:#f59e0b;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,Arial,sans-serif}
+button,input{font:inherit}
+.wrap{max-width:1400px;margin:auto;padding:22px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+h1{margin:0;font-size:24px;letter-spacing:2px;color:#60a5fa}
+header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+.live{font-size:12px;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--green);animation:p 1.5s infinite}
+@keyframes p{50%{opacity:.35}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stat span{font-size:11px;color:var(--mut);letter-spacing:1px}
+.stat strong{display:block;font-size:26px;margin-top:4px}
+h2{font-size:13px;letter-spacing:1px;margin:0 0 10px;color:var(--mut)}
+#stage{position:relative;height:580px;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px}
+#stage canvas{display:block;width:100%;height:100%}
+.lbl{position:absolute;transform:translate(-50%,-100%);background:#111c30ee;border:1px solid var(--blue);padding:6px 10px;border-radius:8px;font-size:11px;text-align:center;pointer-events:none;white-space:nowrap}
+.hint{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--mut)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.ag{cursor:pointer;display:flex;flex-direction:column;gap:8px}
+.ag.sel{outline:2px solid var(--blue)}
+.ag h3{margin:0;font-size:15px}
+.ag p{margin:0;font-size:12px;color:var(--mut);min-height:34px}
+.st{font-size:11px;text-transform:uppercase;font-weight:600}
+.bar{height:7px;background:var(--line);border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;transition:width .4s}
+.btns{display:flex;gap:6px}
+button{border:0;cursor:pointer;background:#263650;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;flex:1}
+button:hover{background:#334a6e}
+button.pri{background:#2563eb}button.pri:hover{background:var(--blue)}
+form{display:flex;gap:10px}
+input{flex:1;min-width:0;background:var(--bg);color:#fff;border:1px solid #334155;padding:12px;border-radius:8px;outline:none}
+form button{flex:none;padding:12px 18px;font-size:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#term{background:#04080f;border-radius:10px;padding:12px;height:260px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,monospace;color:#a7f3d0}
+#feed{height:260px;overflow:auto}
+.fi{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.fi b{font-size:12px}.fi small{color:var(--mut);display:block}
+.fi .d{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips button{flex:none;font-size:11px;background:var(--bg);border:1px solid var(--line)}
+.steps{list-style:none;margin:0;padding:0;font-size:13px}.steps li{display:flex;gap:10px;padding:7px 10px;border-radius:8px;color:#64748b;border-left:3px solid transparent}.steps li small{display:block;font-size:11px;opacity:.8}.steps li.done{color:#4ade80}.steps li.cur{background:#16233a;color:#fff;border-left-color:#5fd4ff}
+#code{background:#04080f;border-radius:10px;padding:12px;margin:0;height:300px;overflow:hidden;font:12px/1.55 ui-monospace,Menlo,monospace;white-space:pre-wrap;color:#cfe8ff}.c-cm{color:#7dd3a8}.c-sh{color:#ffd479}.cur{color:#5fd4ff;animation:p 1s infinite}
+.reps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}.rep{background:#0b1424;border:1px solid;border-radius:12px;padding:12px;font-size:12px;color:#cbd5e1}.rep summary{cursor:pointer;font-size:14px;margin-bottom:8px}.rep p{margin:0 0 8px}.rep ul{margin:4px 0 8px;padding-left:18px}.rep h4{margin:8px 0 3px;font-size:11px;letter-spacing:1px;color:#94a3b8}.rep .chk{color:#ffd479}
+#rvN{width:100%;margin-bottom:10px}
+select{background:var(--bg);color:#fff;border:1px solid #334155;border-radius:8px;padding:0 10px;font:inherit}
+.mk{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.mk b{width:150px;font-size:13px}.mk input{flex:1;min-width:140px;padding:9px}.mk select{padding:9px}.mk button{flex:none;padding:9px 14px}.mk button:disabled{background:#14532d;cursor:default}.ag.off{opacity:.45}
+.qi button{flex:none;padding:6px 10px}.qi button:disabled{opacity:.4;cursor:not-allowed}
+.qi{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}.pb{font-size:10px;font-weight:700;color:#000;padding:3px 7px;border-radius:6px}.qd{flex:1}.qs{color:var(--mut);white-space:nowrap}
+@media(max-width:760px){.reps{grid-template-columns:1fr}}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid3,.two{grid-template-columns:1fr}#stage{height:340px}form{flex-direction:column}.wrap{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><h1>AI COMMAND CENTER</h1><p>Three agents. One development team. (Live in-browser simulation)</p></div><div class="live"><span class="dot"></span>LIVE</div></header>
+
+<section class="stats">
+<div class="card stat"><span>AGENTS</span><strong id="sAg">0</strong></div>
+<div class="card stat"><span>ACTIVE</span><strong id="sA">0</strong></div>
+<div class="card stat"><span>TASKS</span><strong id="sT">0</strong></div>
+<div class="card stat"><span>COMPLETED</span><strong id="sC">0</strong></div>
+</section>
+
+<div id="stage"><div class="hint">Drag to rotate · Scroll to zoom</div></div>
+
+<section class="card" id="mk" style="margin-bottom:16px"><h2>STEP 1 — CREATE YOUR 3 AGENTS</h2><div id="mkB"></div></section>
+<section class="grid3" id="cards"></section>
+
+<section class="card" style="margin-bottom:16px">
+<h2>STEP 2 — YOUR MANAGER SENDS YOU A TASK <span style="color:#94a3b8;font-weight:400">· it lands in your inbox · you give it to your agents</span></h2>
+<form id="f"><select id="pri"><option value="urgent">🔴 Urgent</option><option value="high">🟠 High</option><option value="normal" selected>🔵 Normal</option><option value="low">⚪ Low</option></select><input id="in" placeholder="Example: Build a complete e-commerce platform..."><button class="pri" type="submit">Send as manager</button></form>
+<div class="chips"><button data-t="Build an e-commerce platform">E-commerce platform</button><button data-t="Create a real-time chat app">Real-time chat app</button><button data-t="Build a task management API and UI">Task manager</button><button id="rnd" style="background:#4a1d5c">🎲 Manager sends a task</button></div><label style="display:flex;gap:8px;align-items:center;font-size:12px;color:#94a3b8;margin-top:12px"><input type="checkbox" id="auto" style="flex:none;width:auto;padding:0"> Auto-give the next inbox task to my agents (highest priority first)</label><div id="q"></div>
+</section>
+
+<section class="card" id="rv" style="margin-bottom:16px;border-color:#e040fb"><h2 style="color:#e040fb">STEP 3 — FINAL VERIFICATION — MERHAWI <span style="color:#94a3b8;font-weight:400">· your only job</span></h2><div id="rvB"></div></section>
+<section class="card" style="margin-bottom:16px"><h2>WHAT THE AGENT IS DOING — STEP BY STEP</h2><div id="stH" style="font-size:13px;margin-bottom:12px"></div><div class="two"><ol id="stL" class="steps"></ol><pre id="code"></pre></div></section>
+<section class="two">
+<div class="card"><h2 id="tt">TERMINAL</h2><div id="term"></div></div>
+<div class="card"><h2>LIVE ACTIVITY FEED</h2><div id="feed"></div></div>
+</section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+const COL={backend:'#3b82f6',frontend:'#22c55e',testing:'#f59e0b'};
+const agents=[
+ {id:'backend',name:'Backend Agent',role:'Backend Developer',x:-4},
+ {id:'frontend',name:'Frontend Agent',role:'Frontend Developer',x:0},
+ {id:'testing',name:'Testing Agent',role:'QA Engineer',x:4}
+].map(a=>({...a,status:'idle',task:'Waiting for instructions',progress:0,paused:false,term:['$ waiting for task...'],code:[]}));
+let tasks=0,done=0,sel='backend';const feed=[];
+const SCRIPTS={
+ backend:['git checkout -b feature/api','npm install express ws pg','creating routes/products.js','creating models/order.js','writing POST /api/orders','adding JWT auth middleware','running migrations... ok','git commit -m "feat: REST API"'],
+ frontend:['git checkout -b feature/ui','npm create vite@latest','creating components/Header.jsx','creating pages/Catalog.jsx','wiring fetch("/api/products")','styling responsive layout','vite build... ok','git commit -m "feat: UI"'],
+ testing:['npm i -D vitest playwright','writing api.test.js','writing e2e/checkout.spec.js','vitest run','✓ 14 tests passed','playwright test','✓ 6 e2e passed','git commit -m "test: suite"']
+};
+const CODE={backend:['app.post("/api/orders",auth,async(req,res)=>{','  const o=await db.insert(req.body)','  res.status(201).json(o)','})','router.get("/products",list)'],
+ frontend:['export function Catalog(){','  const [items,set]=useState([])','  useEffect(()=>{load()},[])','  return <Grid items={items}/>','}'],
+ testing:['test("creates order",async()=>{','  const r=await post("/api/orders")','  expect(r.status).toBe(201)','})','await page.click("#checkout")']};
+const $=s=>document.querySelector(s);
+const ts=()=>new Date().toLocaleTimeString();
+function log(agent,msg,c){feed.unshift({agent,msg,c:c||'#60a5fa',t:ts()});feed.length=Math.min(feed.length,60);renderFeed()}
+function tline(a,l){a.term.push('$ '+l);if(a.term.length>80)a.term.shift();if(a.id===sel)renderTerm()}
+
+function renderFeed(){$('#feed').innerHTML=feed.map(f=>`<div class="fi"><span class="d" style="background:${f.c}"></span><div><b>${f.agent}</b> — ${f.msg}<small>${f.t}</small></div></div>`).join('')}
+function renderTerm(){const a=agents.find(x=>x.id===sel),t=$('#term');$('#tt').textContent='TERMINAL — '+a.name.toUpperCase();t.innerHTML=a.term.join('<br>');t.scrollTop=t.scrollHeight}
+function renderCards(){
+ $('#cards').innerHTML=agents.map(a=>`<article class="card ag ${a.id===sel?'sel':''} ${a.created?'':'off'}" data-id="${a.id}">
+ <h3 style="color:${COL[a.id]}">${a.name}</h3><span class="st" style="color:${a.status==='completed'?'#4ade80':a.status==='idle'?'#94a3b8':COL[a.id]}">● ${!a.created?'not created':a.paused?'paused':a.status}</span>
+ <p>${a.created?a.task:'Not created yet — create this agent in Step 1'}</p><div class="bar"><i style="width:${a.progress}%;background:${COL[a.id]}"></i></div><small style="color:#94a3b8">${Math.round(a.progress)}% progress</small>
+ <div class="btns"><button data-a="pause" data-id="${a.id}">${a.paused?'▶ Resume':'⏸ Pause'}</button><button data-a="stop" data-id="${a.id}">■ Stop</button></div></article>`).join('');
+ $('#sA').textContent=agents.filter(a=>['working','testing'].includes(a.status)&&!a.paused).length;
+ $('#sAg').textContent=agents.filter(a=>a.created).length;$('#sT').textContent=tasks;$('#sC').textContent=done;renderSteps();renderReview();
+}
+$('#cards').onclick=e=>{
+ const b=e.target.closest('button');const c=e.target.closest('.ag');if(!c)return;const a=agents.find(x=>x.id===c.dataset.id);
+ if(b){if(b.dataset.a==='pause'&&['working','testing'].includes(a.status)){a.paused=!a.paused;log(a.name,a.paused?'Paused by project manager':'Resumed','#f59e0b')}
+  if(b.dataset.a==='stop'){a.status='idle';a.paused=false;a.task='Stopped by project manager';log(a.name,'Stopped by project manager','#ef4444');tline(a,'^C aborted')}}
+ sel=a.id;renderCards();renderTerm();
+};
+function assign(desc){
+ desc=desc.trim();if(!desc)return;tasks++;review.state='none';if(!desc.startsWith('Fix issues'))lastDesc=desc;
+ const resp={backend:'Design and implement server',frontend:'Build the user interface',testing:'Prepare and run quality tests'};
+ agents.forEach(a=>{a.status='working';a.paused=false;a.progress=0;a.step=0;a.stepIdx=-1;a.buf='';a.queue='';a.stepTitle='';a.file='';a.task=resp[a.id]+': '+desc;a.term.push('','# NEW TASK: '+desc);log(a.name,resp[a.id]+' — '+desc,COL[a.id])});
+ renderCards();renderTerm();
+}
+$('#f').onsubmit=e=>{e.preventDefault();const d=$('#in').value.trim();if(d)enqueue(d,$('#pri').value);$('#in').value=''};
+document.querySelector('.chips').onclick=e=>{if(e.target.dataset.t)enqueue(e.target.dataset.t,$('#pri').value);if(e.target.id==='rnd'){const R=[['Fix checkout payment bug','urgent'],['Add user login & profiles','high'],['Build admin dashboard','normal'],['Improve page load speed','normal'],['Update footer links','low'],['Add email notifications','high']],p=R[Math.floor(Math.random()*R.length)];enqueue(p[0],p[1])}};
+
+// simulation tick
+const qList=[];let cur=null,qid=0;const RANK={urgent:0,high:1,normal:2,low:3},PC={urgent:'#ef4444',high:'#f59e0b',normal:'#3b82f6',low:'#94a3b8'};
+const NS=8;const review={state:'none',t:''};let lastDesc='',rvSig='';
+const STEPS={
+backend:[['Initialise project','package.json','$ npm init -y\n$ npm i express ws pg cors'],['Design database schema','schema.sql','CREATE TABLE orders (\n  id SERIAL, total INT\n);'],['Create data models','models/order.js','export const Order = db.define(\n  "orders", fields);'],['Build REST routes','routes/products.js','app.get("/api/products",\n  async (q, r) => r.json(await list()));'],['Add authentication','middleware/auth.js','app.use(jwt({ secret }));\n// protect /api/orders'],['Add WebSocket sync','server.js','wss.on("connection", ws =>\n  ws.send(state));'],['Run migrations','terminal','$ npm run migrate\n✓ 3 migrations applied'],['Commit & push','git','$ git add -A\n$ git commit -m "feat: API"']],
+frontend:[['Scaffold Vite + React','vite.config.js','$ npm create vite@latest ui\n$ npm i react-router'],['Build layout components','Header.jsx','export function Header() {\n  return <nav>Shop</nav>;\n}'],['Create catalog page','Catalog.jsx','const [items, set] = useState([]);\nuseEffect(load, []);'],['Connect to the API','api.js','const r = await fetch("/api/products");\nreturn r.json();'],['Add cart state','useCart.js','const add = i =>\n  set(c => [...c, i]);'],['Style responsive UI','style.css','.grid { display: grid;\n  grid-template-columns: repeat(3,1fr); }'],['Live updates (WebSocket)','useLive.js','ws.onmessage = e =>\n  setData(JSON.parse(e.data));'],['Build & commit','git','$ npm run build\n$ git commit -m "feat: UI"']],
+testing:[['Set up Vitest + Playwright','vitest.config.js','$ npm i -D vitest playwright'],['Write unit tests','order.test.js','test("total", () => {\n  expect(sum([2,3])).toBe(5);\n});'],['Write API tests','api.test.js','const r = await post("/api/orders");\nexpect(r.status).toBe(201);'],['Write E2E checkout flow','checkout.spec.js','await page.click("#add");\nawait page.click("#checkout");'],['Run the test suite','terminal','$ npx vitest run\n✓ 14 passed'],['Report bugs to developers','report.md','// BUG: empty cart allowed\n// -> assigned to Frontend Agent'],['Re-run E2E tests','terminal','$ npx playwright test\n✓ 6 passed'],['Commit test suite','git','$ git commit -m "test: suite"']]
+};
+agents.forEach(a=>{a.created=false;a.model='Claude';a.stepIdx=-1;a.buf='';a.queue='';a.stepTitle='';a.file=''});
+function startStep(a,i){a.stepIdx=i;const p=STEPS[a.id][i];a.stepTitle=p[0];a.file=p[1];
+ a.queue+='\n// Step '+(i+1)+'/'+NS+': '+p[0]+' ('+p[1]+')\n'+p[2]+'\n';tline(a,'▶ Step '+(i+1)+'/'+NS+': '+p[0]);log(a.name,'Step '+(i+1)+'/'+NS+' — '+p[0]+' · '+p[1],COL[a.id])}
+setInterval(()=>{
+ const [be,fe,te]=agents;
+ agents.forEach(a=>{
+  if(!['working','testing'].includes(a.status)||a.paused)return;
+  let inc=1+Math.random()*3.2;
+  if(a.id==='testing'){const cap=be.status==='completed'&&fe.status==='completed'?100:Math.min(be.progress,fe.progress)*0.9;if(a.progress>=cap)inc=0;else inc=Math.min(inc,cap-a.progress)}
+  a.progress=Math.min(a.stepIdx===NS-1&&!a.queue?100:99,a.progress+inc);
+  const idx=Math.min(NS-1,Math.floor(a.progress/100*NS));
+  if(a.stepIdx<0||(idx>a.stepIdx&&a.queue.length<25))startStep(a,a.stepIdx+1);
+  if(a.id==='testing'&&a.progress>45&&a.status==='working'){a.status='testing';log(a.name,'Running automated test suite','#f59e0b')}
+  if(a.progress>=100&&a.stepIdx===NS-1&&!a.queue){a.status='completed';a.task='Task complete ✔';done++;log(a.name,'Finished all steps and pushed to repo','#4ade80');log(a.name,'📄 Report sent to you — please review','#e040fb');tline(a,'✓ done')}
+ });
+ if(review.state==='none'&&agents.every(a=>a.status==='completed')){review.state='pending';review.t=ts();if(cur)cur.status='awaiting verification';log('Merhawi','Team finished — final verification started','#e040fb')}
+ pump();renderQueue();
+ renderCards();
+},500);
+const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function updateCode(){const a=agents.find(x=>x.id===sel);
+ $('#code').innerHTML=esc(a.buf||'// waiting for a task...').split('\n').slice(-16).map(l=>l.startsWith('//')?'<span class="c-cm">'+l+'</span>':l.startsWith('$')?'<span class="c-sh">'+l+'</span>':l).join('\n')+'<span class="cur">▌</span>'}
+setInterval(()=>{agents.forEach(a=>{if(a.paused||!a.queue||!['working','testing'].includes(a.status))return;a.buf+=a.queue.slice(0,3);a.queue=a.queue.slice(3);if(a.buf.length>2500)a.buf=a.buf.slice(-2000)});updateCode()},50);
+const REPORTS={
+backend:{sum:'Built the REST API: database schema, models, product and order routes, JWT login protection and live WebSocket sync.',res:'3 database migrations applied · API starts without errors',chk:['JWT secret is read from an environment variable, not hard-coded','/api/orders requires a logged-in user']},
+frontend:{sum:'Built the React interface: layout, product catalog, shopping cart, API connection and live updates. Layout is responsive.',res:'Production build succeeded · pages load from the API',chk:['Cart works on a phone-sized screen','API address is not hard-coded']},
+testing:{sum:'Wrote unit, API and end-to-end tests, ran the whole suite, reported 1 bug to the developers and re-tested after the fix.',res:'14 unit tests + 6 end-to-end tests passed',chk:['Tests cover checkout and the empty-cart case','No tests were skipped or weakened']}};
+function enqueue(desc,pri){const t={id:++qid,desc,pri,status:'queued'};qList.push(t);log('Manager','📨 Sent you a '+pri.toUpperCase()+' task: '+desc,PC[pri]);renderQueue();pump()}
+const free=()=>(review.state==='none'&&agents.every(a=>a.status==='idle'))||review.state==='approved';
+const ready=()=>agents.every(a=>a.created);
+function dispatch(id){const t=qList.find(x=>x.id===id);if(!t||t.status!=='queued')return;
+ if(!ready()){log('You','Create all 3 agents first (Step 1)','#ef4444');return}
+ if(!free()){log('You','Your team is busy — finish the verification first','#ef4444');return}
+ t.status='in progress';cur=t;qSig='';log('You','▶ Gave the task to your 3 agents ('+t.pri+'): '+t.desc,PC[t.pri]);assign(t.desc);renderQueue()}
+function pump(){if(!$('#auto').checked||!ready()||!free())return;
+ const q=qList.filter(t=>t.status==='queued').sort((a,b)=>RANK[a.pri]-RANK[b.pri]||a.id-b.id)[0];if(q)dispatch(q.id)}
+let qSig='';
+function renderQueue(){
+ const can=ready()&&free(),sig=qList.map(t=>t.id+t.status).join()+can;if(sig===qSig)return;qSig=sig;
+ const o={'in progress':0,'awaiting verification':0,queued:1,verified:2};
+ const L=[...qList].sort((a,b)=>o[a.status]-o[b.status]||(a.status==='queued'?RANK[a.pri]-RANK[b.pri]:0)||(a.status==='verified'?b.id-a.id:a.id-b.id)).slice(0,8);
+ $('#q').innerHTML=L.length?'<h2 style="margin-top:14px">YOUR INBOX — tasks from your manager, highest priority first</h2>'+L.map(t=>`<div class="qi"><span class="pb" style="background:${PC[t.pri]}">${t.pri.toUpperCase()}</span><span class="qd">${esc(t.desc)}</span>`+(t.status==='queued'?`<button class="go" data-id="${t.id}" ${can?'':'disabled'} title="${ready()?'':'Create your agents first'}">▶ Give to my agents</button>`:`<span class="qs">${{'in progress':'⚙ your team is working','awaiting verification':'👀 waiting for your verification',verified:'✔ verified'}[t.status]}</span>`)+'</div>').join(''):'<p style="color:#94a3b8;font-size:12px;margin:12px 0 0">Inbox is empty. When your manager sends a task it appears here. You give it to your agents, then only verify the result.</p>'}
+$('#q').onclick=e=>{const b=e.target.closest('.go');if(b)dispatch(+b.dataset.id)};
+const MODELS=['Claude','GPT','Gemini','Codex','Local LLM'],ROLE={backend:'Backend Developer',frontend:'Frontend Developer',testing:'QA Tester'};
+function renderMk(){
+ $('#mkB').innerHTML=agents.map(a=>`<div class="mk"><b style="color:${COL[a.id]}">${ROLE[a.id]}</b><input id="nm-${a.id}" value="${esc(a.name)}" ${a.created?'disabled':''}><select id="md-${a.id}" ${a.created?'disabled':''}>${MODELS.map(m=>`<option ${m===a.model?'selected':''}>${m}</option>`).join('')}</select><button data-mk="${a.id}" ${a.created?'disabled':''}>${a.created?'✔ Created':'＋ Create agent'}</button></div>`).join('')+(ready()?'<p style="color:#4ade80;font-size:13px;margin:10px 0 0">✔ Your team is ready. Give them tasks from your inbox (Step 2).</p>':'<div class="btns" style="margin-top:10px"><button data-mk="all" class="pri">＋ Create all 3 agents</button></div>')}
+$('#mkB').onclick=e=>{const id=e.target.dataset.mk;if(!id)return;
+ (id==='all'?agents:agents.filter(a=>a.id===id)).forEach(a=>{if(a.created)return;const n=$('#nm-'+a.id).value.trim();if(n)a.name=n;a.model=$('#md-'+a.id).value;a.created=true;log(a.name,'🆕 Agent created ('+a.model+') and joined your team',COL[a.id])});
+ renderMk();renderCards();qSig='';renderQueue()}
+function approve(){review.state='approved';review.t=ts();if(cur)cur.status='verified';setTimeout(pump,2500);log('Merhawi','✔ Verified and approved the final job','#4ade80');renderReview()}
+function reject(){const n=$('#rvN')?$('#rvN').value.trim():'';review.state='rejected';log('Merhawi','✖ Requested changes'+(n?': '+n:'')+' — sending back to the team','#ef4444');renderReview();setTimeout(()=>assign('Fix issues from review: '+(n||lastDesc||'project')),2000)}
+$('#rvB').onclick=e=>{if(e.target.id==='ok')approve();if(e.target.id==='no')reject()};
+function renderReview(){
+ const st=review.state,sig=st+agents.map(a=>a.status).join();if(sig===rvSig)return;rvSig=sig;
+ if(st==='none'){$('#rvB').innerHTML='<ul class="steps">'+agents.map(a=>{const d=a.status==='completed';return `<li class="${d?'done':''}"><span>${d?'✔':'○'}</span><div>${a.name}: ${d?'finished — report ready':'working…'}</div></li>`}).join('')+'</ul><p style="color:#94a3b8;margin:12px 0 0;font-size:13px">When all three agents finish, each one sends you a report here. You read them, then press VERIFIED.</p>';return}
+ const reps=agents.map(a=>{const R=REPORTS[a.id],k=COL[a.id],files=[...new Set(STEPS[a.id].map(p=>p[1]).filter(f=>f!=='terminal'&&f!=='git'))];
+  return `<details open class="rep" style="border-color:${k}"><summary><b style="color:${k}">📄 ${a.name}</b></summary><p><b>Task:</b> ${esc(lastDesc||'project')}</p><p>${R.sum}</p>
+  <h4>STEPS DONE (${NS}/${NS})</h4><div>${STEPS[a.id].map(p=>p[0]).join(' → ')}</div>
+  <h4>FILES</h4><ul>${files.map(f=>'<li><code>'+f+'</code></li>').join('')}</ul>
+  <h4>RESULT</h4><div>${R.res}</div><h4>PLEASE CHECK</h4><ul class="chk">${R.chk.map(c=>'<li>'+c+'</li>').join('')}</ul></details>`}).join('');
+ let act='';
+ if(st==='pending')act='<input id="rvN" placeholder="If you request changes — tell the team what to fix (optional)"><div class="btns"><button id="ok" style="background:#16a34a;font-size:16px;padding:14px;flex:2">✔ VERIFIED</button><button id="no">✖ Request changes</button></div>';
+ if(st==='approved')act=`<div style="color:#4ade80;font-size:17px;font-weight:700">✔ VERIFIED by Merhawi at ${review.t} — ready to deploy</div>`;
+ if(st==='rejected')act='<div style="color:#ef4444;font-size:15px;font-weight:700">✖ Changes requested — the team is fixing the issues…</div>';
+ $('#rvB').innerHTML=`<p style="margin:0;font-size:13px;color:#ffd479">${st==='pending'?'📬 Your team sent you their reports. Read them, then press VERIFIED.':'Reports from your team:'}</p><div class="reps">${reps}</div>`+act;
+}
+function renderSteps(){const a=agents.find(x=>x.id===sel),k=COL[a.id],fin=a.status==='completed';
+ $('#stH').innerHTML=`<b style="color:${k}">${a.name}</b> — `+(a.stepIdx<0?'waiting for a task':fin?'all steps complete ✔':`now on step ${a.stepIdx+1}/${NS}: <b>${a.stepTitle}</b> in <code>${a.file}</code>`+(a.paused?' (paused)':''));
+ $('#stL').innerHTML=STEPS[a.id].map((p,i)=>{const st=fin||i<a.stepIdx?'done':i===a.stepIdx?'cur':'';return `<li class="${st}"><span>${st==='done'?'✔':st==='cur'?'▶':'○'}</span><div>${p[0]}<small>${p[1]}</small></div></li>`}).join('')}
+
+// ---------- 3D: sci-fi control room with human staff ----------
+const stage=$('#stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#04070d');scene.fog=new THREE.Fog('#04070d',16,38);
+const cam=new THREE.PerspectiveCamera(52,1,.1,100);cam.position.set(0,3.9,10.6);
+const ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(0,2.3,-2);ctl.minDistance=3;ctl.maxDistance=14;ctl.maxPolarAngle=Math.PI/2.05;ctl.enableDamping=true;
+const M=(c,o={})=>new THREE.MeshStandardMaterial({color:c,...o});
+const AMB=new THREE.MeshBasicMaterial({color:0xffb040}),CY=new THREE.MeshBasicMaterial({color:0x5fd4ff});
+const box=(w,h,d,m,x,y,z,p)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);(p||scene).add(o);return o};
+const cyl=(a,b,h,m,x,y,z,p,seg=14)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(a,b,h,seg),m);o.position.set(x,y,z);(p||scene).add(o);return o};
+const sph=(r,m,x,y,z,p,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,16),m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);(p||scene).add(o);return o};
+scene.add(new THREE.AmbientLight(0x7f8fc0,.75));
+const PL=(c,i,d,x,y,z)=>{const l=new THREE.PointLight(c,i,d);l.position.set(x,y,z);scene.add(l)};
+PL(0x4cc9ff,1.4,24,0,5.6,-1);PL(0xe040fb,1.2,20,-7,3,-2);PL(0x4cc9ff,1.2,20,7,3,-2);PL(0xffb040,1,16,0,2.5,5);PL(0xe040fb,1,18,0,3,-8);
+const MAG=new THREE.MeshBasicMaterial({color:0xe040fb});
+const tc=document.createElement('canvas');tc.width=tc.height=128;{const c=tc.getContext('2d');c.fillStyle='#0a0e18';c.fillRect(0,0,128,128);c.strokeStyle='#18233a';c.lineWidth=3;c.strokeRect(1,1,126,126);c.strokeStyle='#101a2c';c.lineWidth=1;c.strokeRect(14,14,100,100)}
+const tt=new THREE.CanvasTexture(tc);tt.wrapS=tt.wrapT=THREE.RepeatWrapping;tt.repeat.set(9,4);
+box(18,6.5,20,M('#ffffff',{map:tt,side:THREE.BackSide,roughness:.8}),0,3.25,1);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(18,20),M('#080b12',{metalness:.9,roughness:.2}));floor.rotation.x=-Math.PI/2;floor.position.set(0,.005,1);scene.add(floor);
+[-3.2,3.2].forEach(x=>box(.08,.05,19.6,CY,x,6.45,1));[-4,3,9].forEach(z=>box(18,.05,.08,MAG,0,6.45,z));
+[-8.95,8.95].forEach(x=>{box(.06,.06,19.8,CY,x,.35,1);box(.06,.06,19.8,MAG,x,5.6,1);[-6,-2,2,6,10].forEach(z=>box(.1,5.3,.08,CY,x,3,z))});
+box(17.8,.06,.06,CY,0,.35,-8.95);box(17.8,.06,.06,MAG,0,5.6,-8.95);[-1.7,1.7].forEach(x=>box(.05,.02,18,MAG,x,.02,1));
+const icon=(x,y,z,c,r)=>{const m=new THREE.MeshBasicMaterial({color:c}),g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=x<0?Math.PI/2:-Math.PI/2;
+ g.add(new THREE.Mesh(new THREE.TorusGeometry(r,.04,8,40),m),new THREE.Mesh(new THREE.TorusGeometry(r*.6,.025,8,32),m),new THREE.Mesh(new THREE.SphereGeometry(r*.18,12,12),m));scene.add(g)};
+icon(-8.8,4.9,5.5,0xe040fb,.55);icon(-8.8,2.2,7,0x5fd4ff,.45);icon(-8.8,4.9,-6.5,0xffb040,.4);icon(8.8,4.9,5.5,0x5fd4ff,.55);icon(8.8,2.2,7,0xe040fb,.45);icon(8.8,4.9,-6.5,0xe040fb,.4);
+[[-5.4,-.8],[5.4,-.8],[0,-6.4],[-5.4,-5.2],[-5.4,3.6],[5.4,-5.2],[5.4,3.6]].forEach((p,i)=>{cyl(.012,.012,2,M('#14181f'),p[0],5.5,p[1]);cyl(.12,.45,.3,M('#0c0f16',{metalness:.6}),p[0],4.4,p[1],null,20);cyl(.42,.42,.03,i%2?MAG:CY,p[0],4.24,p[1],null,24)});
+const pg=new THREE.BufferGeometry(),pa=[];for(let i=0;i<350;i++)pa.push((Math.random()-.5)*17,Math.random()*6,(Math.random()-.5)*19+1);
+pg.setAttribute('position',new THREE.Float32BufferAttribute(pa,3));
+const pts=new THREE.Points(pg,new THREE.PointsMaterial({color:0x9fe8ff,size:.04,transparent:true,opacity:.7}));scene.add(pts);
+const hudC=document.createElement('canvas');hudC.width=hudC.height=512;const hudT=new THREE.CanvasTexture(hudC);
+const hud=new THREE.Mesh(new THREE.PlaneGeometry(2.5,2.5),new THREE.MeshBasicMaterial({map:hudT,transparent:true,side:THREE.DoubleSide,depthWrite:false}));hud.position.set(0,5,-1);scene.add(hud);
+// wall holograms
+const holos=[[-5.4,3.3,-8.8,0,3.6,2.2],[5.4,3.3,-8.8,0,3.6,2.2]].map((h,k)=>{
+ const cv=document.createElement('canvas');cv.width=512;cv.height=300;const tex=new THREE.CanvasTexture(cv);
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(h[4],h[5]),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
+ m.position.set(h[0],h[1],h[2]);m.rotation.y=h[3];scene.add(m);return {cv,tex,k}});
+const panels=[[agents[0],-8.8,3.3,-.8,Math.PI/2,5.2],[agents[2],8.8,3.3,-.8,-Math.PI/2,5.2],[agents[1],0,3.6,-8.8,0,6]].map(h=>{
+ const cv=document.createElement('canvas');cv.width=768;cv.height=480;const tex=new THREE.CanvasTexture(cv);
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(h[5],h[5]*.625),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));
+ m.position.set(h[1],h[2],h[3]);m.rotation.y=h[4];scene.add(m);return {a:h[0],cv,tex}});
+function drawHolo(o,t){
+ const c=o.cv.getContext('2d'),W=512,H=300;c.clearRect(0,0,W,H);
+ c.fillStyle='rgba(8,38,66,.55)';c.fillRect(0,0,W,H);c.strokeStyle='#5fd4ff';c.lineWidth=3;c.strokeRect(4,4,W-8,H-8);c.fillStyle='#5fd4ff';
+ for(let i=0;i<9;i++){const h=30+70*Math.abs(Math.sin(t*.8+i*.7+o.k));c.globalAlpha=.8;c.fillRect(30+i*22,150-h,14,h)}
+ c.globalAlpha=1;c.lineWidth=4;c.beginPath();c.arc(340,95,55,t+o.k,t+o.k+4.2);c.stroke();c.lineWidth=2;c.beginPath();c.arc(340,95,38,-t*1.3,-t*1.3+3);c.stroke();
+ c.beginPath();for(let i=0;i<3;i++){const a=t*.5+i*2.09+o.k;c.lineTo(440+Math.cos(a)*40,205+Math.sin(a)*40)}c.closePath();c.stroke();
+ c.globalAlpha=.55;for(let i=0;i<8;i++)c.fillRect(30,175+i*14,60+((i*53+o.k*31)%130),4);
+ c.beginPath();c.moveTo(220,260);for(let x=0;x<200;x+=10)c.lineTo(220+x,250-25*Math.sin(x/25+t*2+o.k));c.stroke();
+ o.tex.needsUpdate=true;
+}
+// ---- humans ----
+function person(o){
+ const P=new THREE.Group(),F=o.fem?.9:1,sc=new THREE.Color(o.skin),lids=[],fingers=[];
+ const sk=M(o.skin,{roughness:.55,emissive:sc,emissiveIntensity:.15}),su=M(o.suit,{roughness:.75}),su2=M(new THREE.Color(o.suit).multiplyScalar(1.7),{roughness:.7}),sh=M(o.shirt,{roughness:.6}),hr=M(o.hair,{roughness:.55,metalness:.1}),dk=M('#0b0c10',{roughness:.35,metalness:.3}),lip=M(o.fem?'#b8505a':'#a8605a',{roughness:.4}),wh=M('#f6f6f6',{roughness:.3}),ir=M(o.eye||'#4a3320',{roughness:.2});
+ const T=new THREE.Group();T.scale.set(F,1,F);P.add(T);
+ cyl(.21,.17,.62,su,0,1.0,0,T,24);
+ box(.12,.3,.012,sh,0,1.12,-.17,T);
+ [-1,1].forEach(d=>{const l=box(.05,.3,.012,su2,d*.085,1.1,-.185,T);l.rotation.z=-d*.3});
+ if(o.fem){const n=new THREE.Mesh(new THREE.TorusGeometry(.065,.006,6,20),AMB);n.position.set(0,1.27,-.15);n.rotation.x=1.2;T.add(n)}
+ else{sph(.02,M(o.tie),0,1.28,-.185,T,1,.8,.6);box(.04,.3,.01,M(o.tie),0,1.12,-.195,T)}
+ [1,.92,.84].forEach(y=>sph(.009,dk,0,y-.04,-.2,T));
+ box(.05,.07,.008,wh,.11,1.05,-.195,T);box(.05,.012,.009,CY,.11,1.075,-.2,T);box(.04,.025,.01,sh,-.12,1.15,-.195,T);
+ box(.36*F,.14,.27,su,0,.67,0,P);cyl(.075,.085,.035,sh,0,1.375,0,P,16);cyl(.055,.065,.1,sk,0,1.36,-.01,P);
+ [-1,1].forEach(d=>{
+  box(.125,.125,.46,su,d*.095,.66,-.25,P);sph(.065,su,d*.095,.64,-.5,P);box(.1,.5,.1,su,d*.095,.36,-.52,P);
+  box(.1,.055,.22,dk,d*.095,.075,-.58,P);sph(.05,dk,d*.095,.07,-.67,P,1,.55,1);sph(.1,su,d*.235*F,1.27,0,P);
+ });
+ const head=new THREE.Group();head.position.y=1.52;P.add(head);
+ sph(.105,sk,0,.01,0,head,1,1.1,1.05);sph(.085,sk,0,-.055,-.015,head,1,.85,.95);sph(.03,sk,0,-.098,-.05,head,1.1,.8,.9);
+ [-1,1].forEach(d=>{
+  sph(.04,sk,d*.06,-.03,-.075,head,1,.8,.7);
+  sph(.021,wh,d*.042,.018,-.1,head,1,.85,.6);sph(.0125,ir,d*.042,.018,-.114,head,1,1,.4);sph(.006,dk,d*.042,.018,-.118,head,1,1,.4);
+  const lid=sph(.0235,sk,d*.042,.047,-.105,head,1,.05,.7);lids.push(lid);
+  const b=box(.046,.01,.012,hr,d*.042,.058,-.1,head);b.rotation.z=d*.12;
+  sph(.022,sk,d*.105,0,0,head,.45,1,.8);const rg=new THREE.Mesh(new THREE.TorusGeometry(.04,.011,8,16),AMB);rg.rotation.y=Math.PI/2;rg.position.set(d*.118,0,0);head.add(rg);
+  if(o.glasses){const gl=new THREE.Mesh(new THREE.TorusGeometry(.03,.004,8,20),dk);gl.position.set(d*.042,.02,-.12);head.add(gl);box(.004,.004,.1,dk,d*.1,.02,-.07,head)}
+ });
+ if(o.glasses)box(.02,.004,.004,dk,0,.025,-.12,head);
+ box(.014,.05,.02,sk,0,.0,-.1,head).rotation.x=.2;sph(.017,sk,0,-.025,-.115,head,1,.9,1.1);
+ sph(.022,lip,0,-.058,-.093,head,1.6,.35,.6);sph(.022,lip,0,-.07,-.092,head,1.4,.4,.6);
+ box(.01,.01,.07,CY,.13,-.04,-.04,head);
+ sph(.112,hr,0,.04,.025,head,1.02,1.08,1.08);box(.19,.025,.04,hr,0,.105,-.07,head);
+ if(o.fem){box(.24,.34,.06,hr,0,-.08,.1,head);[-1,1].forEach(d=>cyl(.03,.026,.3,hr,d*.112,-.06,.0,head,8))}
+ else{[-1,1].forEach(d=>box(.02,.05,.03,hr,d*.1,0,-.04,head))}
+ if(o.bun)sph(.05,hr,0,.13,.09,head);
+ if(o.beard){sph(.075,hr,0,-.085,-.045,head,1.05,.6,.8);box(.05,.012,.012,hr,0,-.045,-.1,head)}
+ const arm=d=>{const pv=new THREE.Group();pv.position.set(d*.24*F,1.27,0);P.add(pv);
+  cyl(.05,.043,.36,su,0,-.18,0,pv,12);
+  const el=new THREE.Group();el.position.y=-.36;pv.add(el);sph(.044,su,0,0,0,el);
+  cyl(.043,.036,.34,su,0,-.17,0,el,12);cyl(.039,.039,.03,sh,0,-.34,0,el,12);cyl(.03,.03,.05,sk,0,-.37,0,el,10);
+  if(d<0){const w=new THREE.Mesh(new THREE.TorusGeometry(.036,.007,6,16),AMB);w.position.y=-.33;w.rotation.x=Math.PI/2;el.add(w)}
+  box(.075,.085,.022,sk,0,-.43,0,el);
+  for(let i=0;i<4;i++){const fp=new THREE.Group();fp.position.set(-.027+i*.018,-.47,0);el.add(fp);box(.014,.05,.013,sk,0,-.025,0,fp);fingers.push(fp)}
+  box(.016,.04,.014,sk,-d*.045,-.42,-.012,el).rotation.z=d*.4;
+  pv.rotation.x=.65;el.rotation.x=.8;return {pv,el}};
+ const a1=arm(1),a2=arm(-1);
+ return {P,head,a1,a2,lids,fingers,chest:T,F};
+}
+const CASTS=[
+ {skin:'#d9a07a',suit:'#1c2740',shirt:'#e8edf5',tie:'#3b82f6',hair:'#2a1b12',eye:'#3a2a1a'},
+ {skin:'#f0c2a0',suit:'#223a2e',shirt:'#eef2ee',tie:'#22c55e',hair:'#6b3b1c',fem:true,eye:'#2f6b4a'},
+ {skin:'#8d5a3c',suit:'#33281f',shirt:'#f3efe6',tie:'#f59e0b',hair:'#0d0d0d',beard:true,glasses:true},
+ {skin:'#f3cfb3',suit:'#2b2f3a',shirt:'#dfe6ee',tie:'#94a3b8',hair:'#c9a45c',fem:true,eye:'#4a7fb0'},
+ {skin:'#c68642',suit:'#1a1f2b',shirt:'#e5e9f0',tie:'#ef4444',hair:'#1a1a1a',glasses:true},
+ {skin:'#e8b894',suit:'#3a2a35',shirt:'#f1e9ee',tie:'#a855f7',hair:'#4a2a1a',fem:true,bun:true},
+ {skin:'#a86b45',suit:'#18222c',shirt:'#e7edf2',tie:'#5fd4ff',hair:'#101010'}
+];
+const DESKT=M('#10141c',{roughness:.4,metalness:.6}),TOP=M('#1c222d',{roughness:.25,metalness:.6});
+const rigs=[],decor=[];
+COL.x='#5fd4ff';CODE.x=CODE.backend;
+function station(x,z,rot,cast,agent){
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);
+ box(3.4,.82,1.3,DESKT,0,.41,0,g);box(3.5,.07,1.4,TOP,0,.85,0,g);
+ box(3.4,.04,.04,AMB,0,.3,.66,g);[-1.7,1.7].forEach(d=>box(.04,.6,.04,AMB,d,.4,.66,g));box(3.5,.02,.02,AMB,0,.885,.7,g);
+ box(.9,.03,.3,M('#222a36'),0,.9,.45,g);
+ box(.35,.02,.45,M('#e8e8e8'),1.1,.9,.2,g);box(.3,.02,.4,M('#d8d8d0'),1.2,.915,.15,g);
+ cyl(.06,.05,.1,M('#f5f5f5'),-1.2,.95,.3,g);
+ cyl(.02,.02,.5,DARK2(),1.5,1.1,-.4,g);box(.2,.04,.1,AMB,1.5,1.35,-.35,g);
+ const cv=document.createElement('canvas');cv.width=256;cv.height=160;const tex=new THREE.CanvasTexture(cv);
+ const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.1),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide}));scr.position.set(0,1.75,-.35);scr.rotation.x=-.08;g.add(scr);
+ const av=new THREE.Group();av.position.z=1.15;g.add(av);
+ const CH=M('#12151b',{roughness:.5});
+ box(.62,.09,.6,CH,0,.55,0,av);box(.6,.85,.08,CH,0,1.0,.32,av);[-1,1].forEach(d=>box(.05,.05,.4,CH,d*.33,.8,-.02,av));
+ cyl(.04,.04,.45,CH,0,.3,0,av,8);cyl(.34,.34,.05,CH,0,.07,0,av,5);
+ const pr=person(cast);av.add(pr.P);
+ const l=document.createElement('div');l.className='lbl';
+ const r={g,av,cv,tex,scr,pr,l:null,ph:Math.random()*6,a:agent||{id:'x',status:'working',paused:false,progress:0}};
+ if(agent){l.style.display='block';stage.appendChild(l);r.l=l;rigs.push(r)}else decor.push(r);
+ return r;
+}
+function DARK2(){return M('#14181f',{metalness:.5})}
+station(-5.4,-0.8,Math.PI/2,CASTS[0],agents[0]);station(5.4,-0.8,-Math.PI/2,CASTS[2],agents[2]);station(0,-6.4,0,CASTS[1],agents[1]);
+station(-5.4,-5.2,Math.PI/2,CASTS[3]);station(-5.4,3.6,Math.PI/2,CASTS[4]);station(5.4,-5.2,-Math.PI/2,CASTS[5]);station(5.4,3.6,-Math.PI/2,CASTS[6]);
+const mer=station(0,3.8,Math.PI,{skin:'#8a5a3a',suit:'#2a1d3a',shirt:'#f4f4f4',tie:'#e040fb',hair:'#0d0d0d',beard:true});decor.pop();mer.scr.visible=false;
+const merL=document.createElement('div');merL.className='lbl';stage.appendChild(merL);
+const mvC=document.createElement('canvas');mvC.width=512;mvC.height=256;const mvT=new THREE.CanvasTexture(mvC);
+const mvP=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.3),new THREE.MeshBasicMaterial({map:mvT,transparent:true,side:THREE.DoubleSide}));mvP.position.set(0,2.85,2.3);scene.add(mvP);
+const MC={none:'#64748b',pending:'#ffb040',approved:'#4ade80',rejected:'#ef4444'};
+function drawMer(t){
+ const c=mvC.getContext('2d'),st=review.state,k=MC[st];c.clearRect(0,0,512,256);c.fillStyle='rgba(8,10,24,.88)';c.fillRect(0,0,512,256);
+ c.shadowColor=k;c.shadowBlur=16;c.strokeStyle=k;c.lineWidth=5;c.strokeRect(6,6,500,244);c.shadowBlur=0;
+ c.font='bold 24px monospace';c.fillStyle='#e040fb';c.fillText('MERHAWI — FINAL REVIEW',24,46);
+ c.font='bold 27px monospace';c.fillStyle=k;c.globalAlpha=st==='pending'?.6+.4*Math.sin(t*5):1;
+ c.fillText({none:'WAITING FOR TEAM…',pending:'AWAITING VERIFICATION',approved:'✔ VERIFIED & APPROVED',rejected:'✖ CHANGES REQUESTED'}[st],24,110);c.globalAlpha=1;
+ c.font='20px monospace';agents.forEach((a,i)=>{const d=a.status==='completed';c.fillStyle=d?'#4ade80':'#64748b';c.fillText((d?'✔ ':'○ ')+a.id.toUpperCase(),24+i*160,170)});
+ c.fillStyle='#94a3b8';c.font='16px monospace';c.fillText(st==='approved'?'Ready to deploy · '+review.t:'Reviewer: Merhawi',24,220);mvT.needsUpdate=true;
+}
+const lineColor=l=>l.startsWith('//')?'#7dd3a8':l.startsWith('$')?'#ffd479':null;
+function drawScreen(r,t){
+ const c=r.cv.getContext('2d'),a=r.a,k=COL[a.id];c.clearRect(0,0,256,160);c.fillStyle='rgba(6,28,48,.8)';c.fillRect(0,0,256,160);
+ c.strokeStyle=k;c.lineWidth=2;c.strokeRect(2,2,252,156);
+ const active=['working','testing'].includes(a.status)&&!a.paused||a.id==='x';c.font='10px monospace';
+ if(active){let L;if(a.buf!==undefined)L=a.buf.split('\n').slice(-11);else{const src=CODE.backend,off=Math.floor(t/400)+Math.floor(r.ph);L=[];for(let i=0;i<11;i++)L.push(src[(i+off)%src.length])}
+  L.forEach((l,i)=>{c.fillStyle=lineColor(l)||k;c.fillText(l.slice(0,42),8,16+i*13)});if(Math.floor(t/300)%2){c.fillStyle=k;c.fillRect(8,150,7,3)}}
+ else if(a.status==='completed'){c.fillStyle='#4ade80';c.font='bold 22px sans-serif';c.fillText('✔ DONE',70,88)}
+ else{c.fillStyle='#7aa7c7';c.font='12px monospace';c.fillText(a.paused?'-- PAUSED --':'standby...',80,84)}
+ r.tex.needsUpdate=true;
+}
+function drawCode(p,t){
+ const c=p.cv.getContext('2d'),a=p.a,k=COL[a.id],W=768,H=480;if(!a.created){c.clearRect(0,0,W,H);c.fillStyle='rgba(5,12,26,.8)';c.fillRect(0,0,W,H);c.strokeStyle='#334155';c.lineWidth=4;c.strokeRect(6,6,W-12,H-12);c.fillStyle='#64748b';c.font='bold 26px monospace';c.textAlign='center';c.fillText('NO AGENT — CREATE ONE',W/2,H/2);c.textAlign='left';p.tex.needsUpdate=true;return}
+ c.clearRect(0,0,W,H);c.fillStyle='rgba(5,12,26,.88)';c.fillRect(0,0,W,H);
+ c.shadowColor=k;c.shadowBlur=14;c.strokeStyle=k;c.lineWidth=4;c.strokeRect(6,6,W-12,H-12);c.shadowBlur=0;
+ c.globalAlpha=.18;c.fillStyle=k;c.fillRect(6,6,W-12,44);c.globalAlpha=1;
+ c.font='bold 20px monospace';c.fillStyle=k;c.fillText('● '+a.name.toUpperCase(),22,36);c.textAlign='right';c.fillStyle='#cfe8ff';c.fillText(a.file||'idle',W-22,36);c.textAlign='left';
+ c.font='17px monospace';const L=(a.buf||'// waiting for a task...').split('\n').slice(-13);
+ L.forEach((l,i)=>{c.fillStyle=lineColor(l)||'#cfe8ff';c.fillText(l.slice(0,56),22,78+i*25)});
+ if(Math.floor(t*2)%2){const lw=c.measureText(L[L.length-1].slice(0,56)).width;c.fillStyle=k;c.fillRect(24+lw,78+(L.length-1)*25-15,10,19)}
+ c.fillStyle='rgba(255,255,255,.08)';c.fillRect(6,H-70,W-12,64);c.font='bold 18px monospace';c.fillStyle='#fff';
+ c.fillText(a.stepIdx<0?'STANDBY':'STEP '+(a.stepIdx+1)+'/'+NS+' — '+a.stepTitle,22,H-40);
+ for(let i=0;i<NS;i++){c.fillStyle=(i<a.stepIdx||a.status==='completed')?'#4ade80':i===a.stepIdx?k:'#334155';c.fillRect(22+i*40,H-26,32,8)}
+ c.fillStyle=k;c.textAlign='right';c.fillText(Math.round(a.progress)+'%',W-22,H-20);c.textAlign='left';p.tex.needsUpdate=true;
+}
+const HEAD=[[230,140],[270,128],[310,140],[330,175],[328,215],[318,245],[322,262],[305,272],[292,276],[292,300],[320,318],[320,345],[190,345],[200,312],[215,285],[212,250],[200,235],[210,222],[216,205],[206,185],[212,160]];
+function drawHud(t){
+ const c=hudC.getContext('2d');c.clearRect(0,0,512,512);c.lineWidth=5;
+ [[235,'#4cc9ff',1],[205,'#e040fb',-1.4],[175,'#4cc9ff',.8]].forEach(([r,k,sp])=>{c.strokeStyle=k;c.beginPath();c.arc(256,256,r,t*sp,t*sp+4.4);c.stroke();c.beginPath();c.arc(256,256,r,t*sp+4.9,t*sp+6);c.stroke()});
+ c.lineWidth=2;c.strokeStyle='#4cc9ff88';for(let i=0;i<60;i++){const a=i/60*6.283;c.beginPath();c.moveTo(256+Math.cos(a)*242,256+Math.sin(a)*242);c.lineTo(256+Math.cos(a)*250,256+Math.sin(a)*250);c.stroke()}
+ c.save();c.translate(256,256);c.scale(.8,.8);c.translate(-262,-236);c.beginPath();HEAD.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();
+ c.fillStyle='rgba(90,180,255,.3)';c.fill();c.strokeStyle='#7fd8ff';c.lineWidth=3;c.stroke();c.fillStyle='#bfe9ff';
+ for(let i=0;i<40;i++){c.globalAlpha=.4+.6*Math.abs(Math.sin(t*2+i));c.fillRect(205+(i*37)%115,140+(i*53)%200,3,3)}c.globalAlpha=1;c.restore();
+ c.font='bold 16px monospace';
+ [[agents[0],6,60,0],[agents[1],6,440,0],[agents[2],506,100,1]].forEach(([a,x,y,rt])=>{const tx=a.id.toUpperCase()+': '+(a.stepTitle||'idle').slice(0,20),w=c.measureText(tx).width+20,bx=rt?x-w:x;
+  c.fillStyle='rgba(5,12,26,.88)';c.fillRect(bx,y,w,30);c.strokeStyle=COL[a.id];c.lineWidth=2;c.strokeRect(bx,y,w,30);c.fillStyle=COL[a.id];c.fillText(tx,bx+10,y+21)});
+ const nq=qList.filter(x=>x.status==='queued').length,mt='MANAGER: '+(cur&&cur.status!=='verified'?cur.pri.toUpperCase()+' · ':'')+nq+' queued';c.font='bold 16px monospace';const mw=c.measureText(mt).width+20;
+ c.fillStyle='rgba(5,12,26,.88)';c.fillRect(506-mw,12,mw,30);c.strokeStyle='#e040fb';c.lineWidth=2;c.strokeRect(506-mw,12,mw,30);c.fillStyle='#e040fb';c.fillText(mt,516-mw,33);hudT.needsUpdate=true;
+}
+// bloom
+let comp=null;
+try{if(THREE.EffectComposer&&THREE.UnrealBloomPass){comp=new THREE.EffectComposer(renderer);comp.addPass(new THREE.RenderPass(scene,cam));comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(512,512),.75,.6,.6))}}catch(e){comp=null}
+let last=0;
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);comp&&comp.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+const v=new THREE.Vector3();
+function animate(r,t,active,done){
+ const p=r.pr,ph=r.ph,w=active?Math.sin(t*13+ph)*.08:0;
+ if(done){const u=2.7+Math.sin(t*5)*.25;p.a1.pv.rotation.x=u;p.a2.pv.rotation.x=u;p.a1.el.rotation.x=.3;p.a2.el.rotation.x=.3;p.fingers.forEach(f=>f.rotation.x=-.1)}
+ else{p.a1.pv.rotation.x=p.a2.pv.rotation.x=.65;p.a1.el.rotation.x=.8+w;p.a2.el.rotation.x=.8-w;p.fingers.forEach((f,i)=>f.rotation.x=active?.25+Math.sin(t*22+i*1.7+ph)*.22:.35)}
+ p.head.rotation.y=active?Math.sin(t*.9+ph)*.2:Math.sin(t*.4+ph)*.08;
+ p.head.rotation.x=active?.1+Math.sin(t*1.7+ph)*.03:0;
+ p.P.position.y=done?Math.abs(Math.sin(t*4))*.06:0;
+ const br=Math.sin(t*1.8+ph);p.chest.scale.set(p.F*(1+.012*br),1+.01*br,p.F*(1+.02*br));p.chest.rotation.z=Math.sin(t*.5+ph)*.012;
+ const bl=(t*.8+ph)%3.4<.12;p.lids.forEach(l=>{l.scale.y=bl?1:.05;l.position.y=bl?.018:.047});
+}
+function loop(ms){
+ requestAnimationFrame(loop);const t=ms/1000,tick=ms-last>180;
+ rigs.forEach(r=>{
+  const a=r.a,active=['working','testing'].includes(a.status)&&!a.paused;
+  animate(r,t,active,a.status==='completed');if(tick)drawScreen(r,ms);
+  r.pr.head.getWorldPosition(v);v.y+=.45;v.project(cam);
+  r.l.style.display=v.z<1?'block':'none';r.l.style.left=(v.x*.5+.5)*stage.clientWidth+'px';r.l.style.top=(-v.y*.5+.5)*stage.clientHeight+'px';
+  r.l.style.borderColor=COL[a.id];
+  r.pr.P.visible=r.scr.visible=a.created;
+  r.l.innerHTML=!a.created?`<strong style="color:#64748b">${a.id.toUpperCase()}</strong> <span style="color:#94a3b8">EMPTY SEAT — create agent</span>`:`<strong>${a.name.toUpperCase()}</strong> <span style="color:#94a3b8">${a.model}</span> <span style="color:${COL[a.id]}">● ${(a.paused?'paused':a.status).toUpperCase()} ${Math.round(a.progress)}%</span>`+(a.stepIdx>=0&&a.status!=='completed'?`<br><span style="color:#cfe8ff">▶ ${a.stepIdx+1}/${NS} ${a.stepTitle}</span>`:'');
+ });
+ decor.forEach(r=>{animate(r,t,true,false);if(tick)drawScreen(r,ms)});
+ animate(mer,t,review.state==='pending',review.state==='approved');if(review.state==='rejected')mer.pr.head.rotation.y=Math.sin(t*9)*.35;
+ mer.pr.head.getWorldPosition(v);v.y+=.45;v.project(cam);merL.style.display=v.z<1?'block':'none';merL.style.left=(v.x*.5+.5)*stage.clientWidth+'px';merL.style.top=(-v.y*.5+.5)*stage.clientHeight+'px';
+ merL.style.borderColor=MC[review.state];merL.innerHTML='<strong>MERHAWI</strong> <span style="color:'+MC[review.state]+'">● REVIEWER</span>';
+ if(tick){holos.forEach(h=>drawHolo(h,t));panels.forEach(p=>drawCode(p,t));drawHud(t);drawMer(t);last=ms}
+ pts.rotation.y=t*.01;hud.rotation.y=Math.sin(t*.3)*.15;
+ ctl.update();comp?comp.render():renderer.render(scene,cam);
+}
+requestAnimationFrame(loop);
+log('System','Command center online. Assign a task to wake the agents.');
+renderCards();renderTerm();updateCode();renderMk();renderQueue();
+</script>
+</body>
+</html>
